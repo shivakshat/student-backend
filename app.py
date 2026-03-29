@@ -3,7 +3,7 @@ import csv
 import os
 
 app = Flask(__name__)
-
+CORS(app)
 # Create CSV if not exists
 if not os.path.exists("data.csv"):
     with open("data.csv", "w", newline="") as f:
