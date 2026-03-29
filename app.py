@@ -5,13 +5,20 @@ import os
 
 app = Flask(__name__)
 
-# ✅ THIS LINE IS CRITICAL
+# Enable CORS
 CORS(app, resources={r"/*": {"origins": "*"}})
+
+# 🔹 Create CSV if not exists (with header)
+if not os.path.exists("data.csv"):
+    with open("data.csv", "w", newline="") as f:
+        writer = csv.writer(f)
+        writer.writerow(["username", "task", "time"])
 
 @app.route('/')
 def home():
     return "Backend Running"
 
+# 🔹 ADD TASK
 @app.route('/add_task', methods=['POST'])
 def add_task():
     data = request.json
@@ -22,6 +29,7 @@ def add_task():
 
     return jsonify({"message": "Task saved successfully"})
 
+# 🔹 GET TASKS
 @app.route('/get_tasks/<username>')
 def get_tasks(username):
     tasks = []
@@ -29,7 +37,7 @@ def get_tasks(username):
     try:
         with open("data.csv", "r") as f:
             reader = csv.reader(f)
-            next(reader)
+            next(reader)  # skip header
 
             for row in reader:
                 if row[0] == username:
@@ -40,8 +48,9 @@ def get_tasks(username):
     except:
         pass
 
-
     return jsonify(tasks)
+
+# 🔹 DELETE TASK
 @app.route('/delete_task', methods=['POST'])
 def delete_task():
     data = request.json
@@ -49,21 +58,25 @@ def delete_task():
     task_to_delete = data['task']
     time_to_delete = data['time']
 
-    filename = f"{username}.csv"
-
     updated_tasks = []
 
     # Read existing data
-    with open(filename, 'r') as file:
-        reader = csv.DictReader(file)
+    with open("data.csv", "r") as file:
+        reader = csv.reader(file)
+        header = next(reader)
+
         for row in reader:
-            if not (row['task'] == task_to_delete and row['time'] == time_to_delete):
+            # Keep rows NOT matching delete condition
+            if not (row[0] == username and row[1] == task_to_delete and row[2] == time_to_delete):
                 updated_tasks.append(row)
 
-    # Write back remaining data
-    with open(filename, 'w', newline='') as file:
-        writer = csv.DictWriter(file, fieldnames=['task', 'time'])
-        writer.writeheader()
+    # Write updated data back
+    with open("data.csv", "w", newline="") as file:
+        writer = csv.writer(file)
+        writer.writerow(header)
         writer.writerows(updated_tasks)
 
     return jsonify({"message": "Task deleted successfully"})
+
+if __name__ == "__main__":
+    app.run()
