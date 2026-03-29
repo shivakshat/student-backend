@@ -40,4 +40,30 @@ def get_tasks(username):
     except:
         pass
 
+
     return jsonify(tasks)
+@app.route('/delete_task', methods=['POST'])
+def delete_task():
+    data = request.json
+    username = data['username']
+    task_to_delete = data['task']
+    time_to_delete = data['time']
+
+    filename = f"{username}.csv"
+
+    updated_tasks = []
+
+    # Read existing data
+    with open(filename, 'r') as file:
+        reader = csv.DictReader(file)
+        for row in reader:
+            if not (row['task'] == task_to_delete and row['time'] == time_to_delete):
+                updated_tasks.append(row)
+
+    # Write back remaining data
+    with open(filename, 'w', newline='') as file:
+        writer = csv.DictWriter(file, fieldnames=['task', 'time'])
+        writer.writeheader()
+        writer.writerows(updated_tasks)
+
+    return jsonify({"message": "Task deleted successfully"})
